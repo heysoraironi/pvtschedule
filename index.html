@@ -456,7 +456,7 @@
     <div class="config-grid" style="margin-bottom:1rem;">
       <div class="field-group" style="grid-column: 1 / -1;">
         <label>Google OAuth Client ID</label>
-        <input type="text" id="client-id-input" placeholder="30138718995-pvdp6u3b12q11g0dmsef97udukho1d1a.apps.googleusercontent.com" />
+        <input type="text" id="client-id-input" placeholder="xxxxxxxxxx.apps.googleusercontent.com" />
       </div>
       <div class="field-group">
         <label>Crew 1 Name</label>
@@ -664,8 +664,8 @@ async function loadEvents() {
   const spinner = document.getElementById('load-spinner');
   spinner.classList.remove('hidden');
 
-  const start = new Date(date + 'T00:00:00');
-  const end = new Date(date + 'T23:59:59');
+  const start = new Date(date + 'T00:00:00-10:00');
+  const end = new Date(date + 'T23:59:59-10:00');
 
   try {
     const calListRes = await fetch(
