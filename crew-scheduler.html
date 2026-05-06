@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crew Scheduler</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --border: #E2DDD6;
+    --border-strong: #C8C2B8;
+    --text: #1A1814;
+    --text-muted: #7A7570;
+    --text-faint: #B0AAA3;
+    --accent: #2D5A8E;
+    --accent-light: #E8EFF7;
+    --accent-muted: #8AAED4;
+    --crew1: #1B5E3B;
+    --crew1-light: #E8F5EE;
+    --crew1-border: #A8D4B8;
+    --crew2: #7C3E0F;
+    --crew2-light: #FDF0E8;
+    --crew2-border: #E8C4A0;
+    --danger: #8B2020;
+    --danger-light: #FDEAEA;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--accent); }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .setup-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .setup-panel h2 {
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  input[type="text"], input[type="date"], input[type="email"], textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input:focus, textarea:focus { border-color: var(--accent-muted); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    transition: all 0.15s;
+  }
+
+  .btn:hover { background: var(--bg); }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover { background: #244d7a; border-color: #244d7a; }
+
+  .btn-danger {
+    background: var(--danger-light);
+    color: var(--danger);
+    border-color: #E8BEBE;
+  }
+
+  .btn-sm { padding: 5px 12px; font-size: 13px; }
+
+  .btn-google {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    padding: 10px 20px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .google-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-top: 1rem;
+  }
+
+  .status-bar.info { background: var(--accent-light); color: var(--accent); }
+  .status-bar.success { background: var(--crew1-light); color: var(--crew1); }
+  .status-bar.error { background: var(--danger-light); color: var(--danger); }
+  .status-bar.warning { background: var(--crew2-light); color: var(--crew2); }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .events-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .crew-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .crew-col-header {
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .crew-col-header.unassigned { color: var(--text-muted); background: var(--bg); }
+  .crew-col-header.crew1 { color: var(--crew1); background: var(--crew1-light); }
+  .crew-col-header.crew2 { color: var(--crew2); background: var(--crew2-light); }
+
+  .crew-col-body { padding: 10px; min-height: 120px; }
+
+  .event-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: grab;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .event-card:last-child { margin-bottom: 0; }
+  .event-card:hover { border-color: var(--border-strong); }
+  .event-card.dragging { opacity: 0.4; }
+  .event-card.crew1-card { border-left: 3px solid var(--crew1); }
+  .event-card.crew2-card { border-left: 3px solid var(--crew2); }
+
+  .event-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+
+  .event-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .event-address {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .assign-btns {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .assign-btn {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.1s;
+    font-family: 'DM Sans', sans-serif;
+    text-align: center;
+  }
+
+  .assign-btn.to-crew1 {
+    background: var(--crew1-light);
+    color: var(--crew1);
+    border-color: var(--crew1-border);
+  }
+
+  .assign-btn.to-crew2 {
+    background: var(--crew2-light);
+    color: var(--crew2);
+    border-color: var(--crew2-border);
+  }
+
+  .assign-btn.to-unassigned {
+    background: var(--bg);
+    color: var(--text-muted);
+    border-color: var(--border);
+  }
+
+  .assign-btn:hover { filter: brightness(0.95); }
+
+  .output-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .output-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .output-header {
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .output-header.crew1 { color: var(--crew1); background: var(--crew1-light); }
+  .output-header.crew2 { color: var(--crew2); background: var(--crew2-light); }
+
+  .output-body {
+    padding: 1rem;
+  }
+
+  .email-preview {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    min-height: 180px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .pill.crew1 { background: var(--crew1-light); color: var(--crew1); }
+  .pill.crew2 { background: var(--crew2-light); color: var(--crew2); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.5rem 0;
+  }
+
+  .setup-note {
+    background: #FFFBEB;
+    border: 1px solid #F0E0A0;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #6B5800;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .setup-note code {
+    font-family: 'DM Mono', monospace;
+    background: rgba(0,0,0,0.07);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+
+  .hidden { display: none !important; }
+
+  #app-section { display: none; }
+
+  .count-badge {
+    background: var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 7px;
+    border-radius: 10px;
+  }
+
+  .crew1 .count-badge { background: var(--crew1-border); color: var(--crew1); }
+  .crew2 .count-badge { background: var(--crew2-border); color: var(--crew2); }
+
+  .copy-btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Crew <span>Scheduler</span></div>
+  <div id="auth-status" style="font-size:13px; color:var(--text-muted);">Not connected</div>
+</header>
+
+<main>
+
+  <!-- SETUP PANEL -->
+  <div class="setup-panel" id="setup-panel">
+    <h2>Configuration</h2>
+
+    <div class="setup-note" id="client-id-note">
+      <strong>One-time setup:</strong> You need a Google OAuth Client ID to connect to your calendar.
+      Go to <a href="https://console.cloud.google.com/" target="_blank" style="color:inherit;">console.cloud.google.com</a> →
+      Create project → Enable <code>Google Calendar API</code> → Credentials → Create OAuth Client ID →
+      Application type: <code>Web application</code> → Authorized JS origins: add <code>file://</code> and your local file path →
+      Copy the Client ID below.
+    </div>
+
+    <div class="config-grid" style="margin-bottom:1rem;">
+      <div class="field-group" style="grid-column: 1 / -1;">
+        <label>Google OAuth Client ID</label>
+        <input type="text" id="client-id-input" placeholder="xxxxxxxxxx.apps.googleusercontent.com" />
+      </div>
+      <div class="field-group">
+        <label>Crew 1 Name</label>
+        <input type="text" id="crew1-name" placeholder="e.g. Team Alpha" value="Crew 1" />
+      </div>
+      <div class="field-group">
+        <label>Crew 2 Name</label>
+        <input type="text" id="crew2-name" placeholder="e.g. Team Bravo" value="Crew 2" />
+      </div>
+      <div class="field-group">
+        <label>Crew 1 Email(s)</label>
+        <input type="text" id="crew1-emails" placeholder="crew1@email.com, supervisor@email.com" />
+      </div>
+      <div class="field-group">
+        <label>Crew 2 Email(s)</label>
+        <input type="text" id="crew2-emails" placeholder="crew2@email.com, supervisor@email.com" />
+      </div>
+      <div class="field-group">
+        <label>Anthropic API Key</label>
+        <input type="text" id="anthropic-key" placeholder="sk-ant-..." />
+      </div>
+      <div class="field-group">
+        <label>Starting Location (for routing)</label>
+        <input type="text" id="start-location" placeholder="e.g. Honolulu, HI" value="Honolulu, HI" />
+      </div>
+    </div>
+
+    <button class="btn btn-google" id="connect-btn" onclick="connectGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Connect Google Calendar
+    </button>
+
+    <div id="connect-status"></div>
+  </div>
+
+  <!-- APP SECTION -->
+  <div id="app-section">
+
+    <div class="toolbar">
+      <div class="field-group" style="flex-direction:row; align-items:center; gap:10px;">
+        <label style="font-size:12px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap;">Date</label>
+        <input type="date" id="date-picker" style="width:180px;" />
+      </div>
+      <button class="btn btn-primary" onclick="loadEvents()">
+        <span id="load-spinner" class="loading-spinner hidden"></span>
+        Load Events
+      </button>
+      <button class="btn" onclick="generateEmails()" id="generate-btn" style="display:none;">
+        <span id="gen-spinner" class="loading-spinner hidden"></span>
+        Generate Emails with AI
+      </button>
+    </div>
+
+    <!-- EVENT ASSIGNMENT COLUMNS -->
+    <div class="events-grid" id="events-grid" style="display:none;">
+      <div class="crew-col">
+        <div class="crew-col-header unassigned">
+          Unassigned
+          <span class="count-badge" id="unassigned-count">0</span>
+        </div>
+        <div class="crew-col-body" id="unassigned-col" ondrop="drop(event,'unassigned')" ondragover="allowDrop(event)"></div>
+      </div>
+      <div class="crew-col">
+        <div class="crew-col-header crew1">
+          <span id="crew1-col-label">Crew 1</span>
+          <span class="count-badge crew1" id="crew1-count">0</span>
+        </div>
+        <div class="crew-col-body" id="crew1-col" ondrop="drop(event,'crew1')" ondragover="allowDrop(event)"></div>
+      </div>
+      <div class="crew-col">
+        <div class="crew-col-header crew2">
+          <span id="crew2-col-label">Crew 2</span>
+          <span class="count-badge crew2" id="crew2-count">0</span>
+        </div>
+        <div class="crew-col-body" id="crew2-col" ondrop="drop(event,'crew2')" ondragover="allowDrop(event)"></div>
+      </div>
+    </div>
+
+    <!-- EMAIL OUTPUT -->
+    <div class="output-section" id="output-section" style="display:none;">
+      <div class="output-panel">
+        <div class="output-header crew1">
+          <span id="crew1-email-label">Crew 1 Email</span>
+        </div>
+        <div class="output-body">
+          <div class="email-preview" id="crew1-email">Assign events and click "Generate Emails with AI"</div>
+          <div class="copy-btn-row">
+            <button class="btn btn-sm" onclick="copyEmail('crew1')">Copy</button>
+            <button class="btn btn-sm" onclick="openGmail('crew1')">Open in Gmail</button>
+          </div>
+        </div>
+      </div>
+      <div class="output-panel">
+        <div class="output-header crew2">
+          <span id="crew2-email-label">Crew 2 Email</span>
+        </div>
+        <div class="output-body">
+          <div class="email-preview" id="crew2-email">Assign events and click "Generate Emails with AI"</div>
+          <div class="copy-btn-row">
+            <button class="btn btn-sm" onclick="copyEmail('crew2')">Copy</button>
+            <button class="btn btn-sm" onclick="openGmail('crew2')">Open in Gmail</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+let accessToken = null;
+let events = [];
+let assignments = {};
+let emailOutputs = { crew1: '', crew2: '' };
+
+function getConfig() {
+  return {
+    clientId: document.getElementById('client-id-input').value.trim(),
+    crew1Name: document.getElementById('crew1-name').value.trim() || 'Crew 1',
+    crew2Name: document.getElementById('crew2-name').value.trim() || 'Crew 2',
+    crew1Emails: document.getElementById('crew1-emails').value.trim(),
+    crew2Emails: document.getElementById('crew2-emails').value.trim(),
+    anthropicKey: document.getElementById('anthropic-key').value.trim(),
+    startLocation: document.getElementById('start-location').value.trim(),
+  };
+}
+
+function saveConfig() {
+  const cfg = getConfig();
+  localStorage.setItem('crewSchedulerConfig', JSON.stringify(cfg));
+}
+
+function loadConfig() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem('crewSchedulerConfig') || '{}');
+    if (cfg.clientId) document.getElementById('client-id-input').value = cfg.clientId;
+    if (cfg.crew1Name) document.getElementById('crew1-name').value = cfg.crew1Name;
+    if (cfg.crew2Name) document.getElementById('crew2-name').value = cfg.crew2Name;
+    if (cfg.crew1Emails) document.getElementById('crew1-emails').value = cfg.crew1Emails;
+    if (cfg.crew2Emails) document.getElementById('crew2-emails').value = cfg.crew2Emails;
+    if (cfg.anthropicKey) document.getElementById('anthropic-key').value = cfg.anthropicKey;
+    if (cfg.startLocation) document.getElementById('start-location').value = cfg.startLocation;
+  } catch(e) {}
+}
+
+function setStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'status-bar ' + type;
+  el.innerHTML = '<div class="dot"></div>' + msg;
+  el.style.display = 'flex';
+}
+
+function connectGoogle() {
+  const cfg = getConfig();
+  if (!cfg.clientId) {
+    setStatus('connect-status', 'error', 'Please enter your Google OAuth Client ID first.');
+    return;
+  }
+  saveConfig();
+  const scope = 'https://www.googleapis.com/auth/calendar.readonly';
+  const redirectUri = window.location.href.split('?')[0].split('#')[0];
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(cfg.clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=consent`;
+  window.location.href = url;
+}
+
+function handleOAuthCallback() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.replace('#', ''));
+  const token = params.get('access_token');
+  if (token) {
+    accessToken = token;
+    window.history.replaceState(null, '', window.location.pathname);
+    onAuthenticated();
+  }
+}
+
+function onAuthenticated() {
+  document.getElementById('auth-status').innerHTML = '<span style="color:var(--crew1);">&#10003; Connected to Google Calendar</span>';
+  document.getElementById('app-section').style.display = 'block';
+  document.getElementById('setup-panel').style.display = 'none';
+  updateCrewLabels();
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('date-picker').value = today;
+}
+
+function updateCrewLabels() {
+  const cfg = getConfig();
+  document.getElementById('crew1-col-label').textContent = cfg.crew1Name;
+  document.getElementById('crew2-col-label').textContent = cfg.crew2Name;
+  document.getElementById('crew1-email-label').textContent = cfg.crew1Name + ' Email';
+  document.getElementById('crew2-email-label').textContent = cfg.crew2Name + ' Email';
+}
+
+async function loadEvents() {
+  if (!accessToken) { alert('Not connected to Google Calendar.'); return; }
+  const date = document.getElementById('date-picker').value;
+  if (!date) { alert('Pick a date.'); return; }
+
+  const spinner = document.getElementById('load-spinner');
+  spinner.classList.remove('hidden');
+
+  const start = new Date(date + 'T00:00:00');
+  const end = new Date(date + 'T23:59:59');
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime`;
+
+  try {
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'Calendar API error');
+    }
+    const data = await res.json();
+    events = (data.items || []).filter(e => e.status !== 'cancelled');
+    assignments = {};
+    events.forEach(e => { assignments[e.id] = 'unassigned'; });
+    renderEvents();
+    document.getElementById('events-grid').style.display = 'grid';
+    document.getElementById('output-section').style.display = 'grid';
+    document.getElementById('generate-btn').style.display = 'inline-flex';
+  } catch(e) {
+    alert('Error loading events: ' + e.message);
+  } finally {
+    spinner.classList.add('hidden');
+  }
+}
+
+function parseEventDetails(event) {
+  const desc = event.description || '';
+  const addressMatch = desc.match(/Address:\s*([^\n]+)/);
+  const phoneMatch = desc.match(/Phone:\s*([^\n]+)/);
+  const emailMatch = desc.match(/Email:\s*([^\n]+)/);
+  const scoopMatch = desc.match(/Scoop:\s*([^\n]+)/);
+  return {
+    address: addressMatch ? addressMatch[1].trim() : '',
+    phone: phoneMatch ? phoneMatch[1].trim() : '',
+    email: emailMatch ? emailMatch[1].trim() : '',
+    scoop: scoopMatch ? scoopMatch[1].trim() : '',
+  };
+}
+
+function formatTime(event) {
+  if (event.start.date) return 'All day';
+  const d = new Date(event.start.dateTime);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+function renderEvents() {
+  const cfg = getConfig();
+  const cols = { unassigned: [], crew1: [], crew2: [] };
+  events.forEach(e => {
+    const crew = assignments[e.id] || 'unassigned';
+    cols[crew].push(e);
+  });
+
+  ['unassigned', 'crew1', 'crew2'].forEach(crew => {
+    const col = document.getElementById(crew + '-col');
+    col.innerHTML = '';
+    cols[crew].forEach(e => {
+      const details = parseEventDetails(e);
+      const card = document.createElement('div');
+      card.className = 'event-card' + (crew === 'crew1' ? ' crew1-card' : crew === 'crew2' ? ' crew2-card' : '');
+      card.draggable = true;
+      card.dataset.id = e.id;
+      card.addEventListener('dragstart', dragStart);
+
+      const otherCrew1 = crew === 'crew1' ? 'hidden' : '';
+      const otherCrew2 = crew === 'crew2' ? 'hidden' : '';
+      const unassignedHide = crew === 'unassigned' ? 'hidden' : '';
+
+      card.innerHTML = `
+        <div class="event-time">${formatTime(e)}</div>
+        <div class="event-title">${e.summary || 'Untitled'}</div>
+        ${details.address ? `<div class="event-address">${details.address}</div>` : ''}
+        <div class="assign-btns">
+          <div class="assign-btn to-crew1 ${otherCrew1}" onclick="assign('${e.id}','crew1')">${cfg.crew1Name}</div>
+          <div class="assign-btn to-crew2 ${otherCrew2}" onclick="assign('${e.id}','crew2')">${cfg.crew2Name}</div>
+          <div class="assign-btn to-unassigned ${unassignedHide}" onclick="assign('${e.id}','unassigned')">Unassign</div>
+        </div>
+      `;
+      col.appendChild(card);
+    });
+  });
+
+  document.getElementById('unassigned-count').textContent = cols.unassigned.length;
+  document.getElementById('crew1-count').textContent = cols.crew1.length;
+  document.getElementById('crew2-count').textContent = cols.crew2.length;
+}
+
+function assign(id, crew) {
+  assignments[id] = crew;
+  renderEvents();
+}
+
+let draggedId = null;
+function dragStart(e) { draggedId = e.currentTarget.dataset.id; e.currentTarget.classList.add('dragging'); }
+function allowDrop(e) { e.preventDefault(); }
+function drop(e, crew) {
+  e.preventDefault();
+  if (draggedId) { assignments[draggedId] = crew; draggedId = null; renderEvents(); }
+}
+
+async function generateEmails() {
+  const cfg = getConfig();
+  if (!cfg.anthropicKey) { alert('Please enter your Anthropic API key in the setup panel (scroll up).'); return; }
+
+  const crew1Events = events.filter(e => assignments[e.id] === 'crew1');
+  const crew2Events = events.filter(e => assignments[e.id] === 'crew2');
+
+  if (crew1Events.length === 0 && crew2Events.length === 0) {
+    alert('Please assign at least one event to a crew first.');
+    return;
+  }
+
+  const spinner = document.getElementById('gen-spinner');
+  spinner.classList.remove('hidden');
+  document.getElementById('generate-btn').disabled = true;
+
+  const date = document.getElementById('date-picker').value;
+  const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  try {
+    await Promise.all([
+      crew1Events.length > 0 ? generateCrewEmail('crew1', crew1Events, cfg, displayDate) : Promise.resolve(),
+      crew2Events.length > 0 ? generateCrewEmail('crew2', crew2Events, cfg, displayDate) : Promise.resolve(),
+    ]);
+  } finally {
+    spinner.classList.add('hidden');
+    document.getElementById('generate-btn').disabled = false;
+  }
+}
+
+async function generateCrewEmail(crew, crewEvents, cfg, displayDate) {
+  const crewName = crew === 'crew1' ? cfg.crew1Name : cfg.crew2Name;
+  const emailEl = document.getElementById(crew + '-email');
+  emailEl.textContent = 'Generating...';
+
+  const eventsList = crewEvents.map(e => {
+    const details = parseEventDetails(e);
+    return `- Time: ${formatTime(e)}
+  Name: ${e.summary || 'Untitled'}
+  Address: ${details.address || 'No address'}
+  Phone: ${details.phone || ''}
+  Email: ${details.email || ''}
+  Notes: ${e.description ? 'Yes (see Scoop link)' : 'None'}`;
+  }).join('\n\n');
+
+  const prompt = `You are a scheduling coordinator. Create a daily schedule email for ${crewName} for ${displayDate}.
+
+Starting location: ${cfg.startLocation} (all jobs are in Hawaii)
+
+Events to schedule:
+${eventsList}
+
+Instructions:
+- Optimize the order to minimize driving while respecting any timed appointments
+- If an event has a specific time, it must stay at that time
+- Write a clean, professional schedule email addressed to the crew
+- Include a brief optimized route order with stop numbers
+- For each stop include: stop number, client name, address, time (if applicable), and phone number
+- Add a friendly sign-off
+- Format it so it's easy to read on a phone
+- Do not include email addresses in the schedule (those are internal)
+- Keep it concise and practical
+
+Return ONLY the email body text, no subject line, no extra commentary.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': document.getElementById('anthropic-key').value.trim(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content.map(b => b.text || '').join('');
+    emailOutputs[crew] = text;
+    emailEl.textContent = text;
+  } catch(e) {
+    emailEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+function copyEmail(crew) {
+  const text = emailOutputs[crew] || document.getElementById(crew + '-email').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+function openGmail(crew) {
+  const cfg = getConfig();
+  const to = crew === 'crew1' ? cfg.crew1Emails : cfg.crew2Emails;
+  const crewName = crew === 'crew1' ? cfg.crew1Name : cfg.crew2Name;
+  const date = document.getElementById('date-picker').value;
+  const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  const subject = `Schedule — ${crewName} — ${displayDate}`;
+  const body = emailOutputs[crew] || document.getElementById(crew + '-email').textContent;
+  const url = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.open(url, '_blank');
+}
+
+loadConfig();
+handleOAuthCallback();
+</script>
+</body>
+</html>
