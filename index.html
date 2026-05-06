@@ -456,7 +456,7 @@
     <div class="config-grid" style="margin-bottom:1rem;">
       <div class="field-group" style="grid-column: 1 / -1;">
         <label>Google OAuth Client ID</label>
-        <input type="text" id="client-id-input" placeholder="xxxxxxxxxx.apps.googleusercontent.com" />
+        <input type="text" id="client-id-input" placeholder="30138718995-pvdp6u3b12q11g0dmsef97udukho1d1a.apps.googleusercontent.com" />
       </div>
       <div class="field-group">
         <label>Crew 1 Name</label>
@@ -667,16 +667,42 @@ async function loadEvents() {
   const start = new Date(date + 'T00:00:00');
   const end = new Date(date + 'T23:59:59');
 
-  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime`;
-
   try {
-    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || 'Calendar API error');
+    const calListRes = await fetch(
+      'https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250',
+      { headers: { Authorization: 'Bearer ' + accessToken } }
+    );
+    if (!calListRes.ok) {
+      const err = await calListRes.json();
+      throw new Error(err.error?.message || 'Could not fetch calendar list');
     }
-    const data = await res.json();
-    events = (data.items || []).filter(e => e.status !== 'cancelled');
+    const calListData = await calListRes.json();
+    const calendars = (calListData.items || []).filter(c => c.accessRole !== 'freeBusyReader');
+
+    const allFetches = calendars.map(cal => {
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime`;
+      return fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } })
+        .then(r => r.json())
+        .then(data => (data.items || []).map(e => ({ ...e, _calendarName: cal.summary, _calendarColor: cal.backgroundColor })))
+        .catch(() => []);
+    });
+
+    const results = await Promise.all(allFetches);
+    const allEvents = results.flat().filter(e => e.status !== 'cancelled');
+
+    const seen = new Set();
+    events = allEvents.filter(e => {
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
+
+    events.sort((a, b) => {
+      const ta = a.start.dateTime || a.start.date;
+      const tb = b.start.dateTime || b.start.date;
+      return ta.localeCompare(tb);
+    });
+
     assignments = {};
     events.forEach(e => { assignments[e.id] = 'unassigned'; });
     renderEvents();
@@ -734,7 +760,7 @@ function renderEvents() {
       const unassignedHide = crew === 'unassigned' ? 'hidden' : '';
 
       card.innerHTML = `
-        <div class="event-time">${formatTime(e)}</div>
+        <div class="event-time">${formatTime(e)}${e._calendarName ? ` &middot; <span style="color:var(--text-faint);font-size:11px">${e._calendarName}</span>` : ''}</div>
         <div class="event-title">${e.summary || 'Untitled'}</div>
         ${details.address ? `<div class="event-address">${details.address}</div>` : ''}
         <div class="assign-btns">
